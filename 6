@@ -1,0 +1,62 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+
+public class Utils {
+
+    @Test
+    void test() throws IOException {
+        GetCategoryResponse getCategoryResponse = new GetCategoryResponse();
+        getCategoryResponse.setId(1);
+        getCategoryResponse.setTitle("myTitle");
+
+        StringWriter writer = new StringWriter();
+
+        //объект Jackson - выполняет сериализацию
+        ObjectMapper mapper = new ObjectMapper();
+
+        //сериализация: 1 куда, 2 что
+        mapper.writeValue(writer, getCategoryResponse);
+
+        //преобразовываем все записанное в StringWriter в строку
+        String result = writer.toString();
+        System.out.println(result);
+
+        StringReader reader = new StringReader("{\"id\":1,\"title\":\"myTitle\",\"products\":[]}");
+
+        GetCategoryResponse getCategoryResponseReader = mapper.readValue(reader, GetCategoryResponse.class);
+    }
+}
+
+import lombok.SneakyThrows;
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import retrofit2.Response;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
+public class GetCategoryTest {
+
+    static CategoryService categoryService;
+    @BeforeAll
+    static void beforeAll() {
+        categoryService = RetrofitUtils.getRetrofit().create(CategoryService.class);
+    }
+
+    @SneakyThrows
+    @Test
+    void getCategoryByIdPositiveTest() {
+        Response<GetCategoryResponse> response = categoryService.getCategory(1).execute();
+
+        assertThat(response.isSuccessful(), CoreMatchers.is(true));
+        assertThat(response.body().getId(), equalTo(1));
+        assertThat(response.body().getTitle(), equalTo("Food"));
+        response.body().getProducts().forEach(product ->
+                assertThat(product.getCategoryTitle(), equalTo("Food")));
+    }
+}
